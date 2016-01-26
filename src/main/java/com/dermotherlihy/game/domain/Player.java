@@ -8,12 +8,11 @@ import java.util.concurrent.CountDownLatch;
  */
 public class Player implements Runnable{
 
-    private static final int TEN_SECONDS = 1;
+    private static final int TEN_SECONDS = 10000;
     private CountDownLatch latch = null;
     private boolean playing = false;
     private Pitch pitch;
     private Random randomMoveGenerator = new Random();
-
     private int id;
 
     private Coordinate currentPosition;
@@ -40,14 +39,14 @@ public class Player implements Runnable{
     }
 
 
-    private void play(){
+    private void playGame(){
         while(playing){
             updatePosition();
         }
         sleep(); //not playing so wait 10 seconds
         if(referee.allowsEntry(this)){
             playing = true;
-            play();
+            playGame();
         }
     }
 
@@ -91,7 +90,7 @@ public class Player implements Runnable{
         try {
             latch.await();
             playing = true;
-            play();
+            playGame();
         } catch (InterruptedException e) {
             System.out.println("Interrupted so game over for me");
         }

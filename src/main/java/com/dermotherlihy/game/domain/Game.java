@@ -31,6 +31,12 @@ public class Game {
     public synchronized void removePlayer(Player player){
         players.remove(player);
     }
-
+    /**
+     * Removes player from game
+     * @param player
+     */
+    public synchronized void addPlayer(Player player){
+        players.add(player);
+    }
 
 }
