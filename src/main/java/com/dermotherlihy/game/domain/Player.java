@@ -1,26 +1,29 @@
 package com.dermotherlihy.game.domain;
 
-import java.util.Random;
+import com.dermotherlihy.game.utils.GameRandom;
+
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by dermot.herlihy on 25/01/2016.
  */
 public class Player implements Runnable{
 
+    private static final int ONE_SECOND = 1000;
     private static final int TEN_SECONDS = 10000;
-    private CountDownLatch latch = null;
-    private boolean playing = false;
+    private CountDownLatch startWhistle = null;
+    private AtomicBoolean playing = new AtomicBoolean();
     private Pitch pitch;
-    private Random randomMoveGenerator = new Random();
+    private GameRandom randomGenerator = new GameRandom();
     private int id;
 
     private Coordinate currentPosition;
 
     private Referee referee;
 
-    public Player(int id, Pitch pitch, CountDownLatch latch) {
-        this.latch=latch;
+    public Player(int id, Pitch pitch, CountDownLatch startWhistle) {
+        this.startWhistle=startWhistle;
         this.pitch=pitch;
         currentPosition = pitch.getRandomCoordinate();
         this.id = id;
@@ -40,12 +43,12 @@ public class Player implements Runnable{
 
 
     private void playGame(){
-        while(playing){
+        while(playing.get()){
             updatePosition();
         }
-        sleep(); //not playing so wait 10 seconds
+        sleep(TEN_SECONDS); //not playing so wait 10 seconds
         if(referee.allowsEntry(this)){
-            playing = true;
+            playing.set(true);
             playGame();
         }
     }
@@ -53,18 +56,18 @@ public class Player implements Runnable{
     private void updatePosition() {
         currentPosition= getNextPosition();
         this.referee.update(this);
-        sleep(); //wait for 10 seconds
+        sleep(ONE_SECOND); //wait for 1 seconds
     }
 
     /**
      * Assumption : For the purposes of this exercise, I have assume that a player will only move
      * left, right, forward or back 1 meter every 10 seconds. Other directions are excluded.
      */
-    private Coordinate getNextPosition() {
+    protected Coordinate getNextPosition() {
         int LEFT = 0;
         int RIGHT = 1;
         int FORWARD = 2;
-        int randomMove = randomMoveGenerator.nextInt(4);
+        int randomMove = randomGenerator.nextInt(4);
         Coordinate newPosition;
         //Step left
         if(randomMove == LEFT){
@@ -85,25 +88,28 @@ public class Player implements Runnable{
         return pitch.contains(newPosition) ? newPosition : getNextPosition();
     }
 
-
     public void run() {
         try {
-            latch.await();
-            playing = true;
+            startWhistle.await();
+            playing.set(true);
             playGame();
         } catch (InterruptedException e) {
             System.out.println("Interrupted so game over for me");
         }
     }
 
-    private void sleep() {
+    private void sleep(int millesconds) {
         try {
-            Thread.sleep(TEN_SECONDS);
+            Thread.sleep(millesconds);
         } catch(InterruptedException ex) {
         }
     }
 
-    public synchronized void setPlaying(boolean playing) {
-        this.playing = playing;
+    public void setPlaying(boolean update) {
+         playing.set(update);
+    }
+
+    protected void setRandomGenerator(GameRandom randomGenerator) {
+        this.randomGenerator = randomGenerator;
     }
 }

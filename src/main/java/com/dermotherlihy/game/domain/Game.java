@@ -20,7 +20,7 @@ public class Game {
         }
     }
 
-    public synchronized List<Player> getPlayers() {
+    public List<Player> getPlayers() {
         return new ArrayList<Player>(players);
     }
 
@@ -28,14 +28,14 @@ public class Game {
      * Removes player from game
      * @param player
      */
-    public synchronized void removePlayer(Player player){
+    public void removePlayer(Player player){
         players.remove(player);
     }
     /**
      * Removes player from game
      * @param player
      */
-    public synchronized void addPlayer(Player player){
+    public void addPlayer(Player player){
         players.add(player);
     }
 

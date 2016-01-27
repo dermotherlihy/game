@@ -8,7 +8,6 @@ import java.util.concurrent.*;
  */
 public class Referee {
 
-    private static final Card YELLOW_CARD = new Card(Card.Colour.YELLOW);
     private static final int FIRST_REMOVAL = 2;
     private static final int SECOND_REMOVAL = 4;
 
@@ -38,7 +37,7 @@ public class Referee {
     }
 
     private void issueYellowCard(Player player) {
-        playerCards.get(player.getId()).add(YELLOW_CARD);
+        playerCards.get(player.getId()).add(Card.YELLOW);
         if(playerMustBeRemoved(player)){
             removePlayerFromGame(player);
         }
@@ -81,6 +80,7 @@ public class Referee {
             return true;
         }
         else{
+            System.out.println(String.format("Player %s has left the game", player.getId()));
             checkForGameTermination();
             return false;
         }
@@ -108,5 +108,21 @@ public class Referee {
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
         }
+    }
+
+    protected Map<Integer, List<Card>> getPlayerCards() {
+        return playerCards;
+    }
+
+    protected void setPlayerPositions(Map<Integer, Coordinate> playerPositions) {
+        this.playerPositions = playerPositions;
+    }
+
+    protected void setPlayerCards(Map<Integer, List<Card>> playerCards) {
+        this.playerCards = playerCards;
+    }
+
+    protected void setGame(Game game) {
+        this.game = game;
     }
 }
