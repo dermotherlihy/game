@@ -9,7 +9,7 @@ import java.util.concurrent.*;
 public class Referee {
 
     private static final int FIRST_REMOVAL = 2;
-    private static final int SECOND_REMOVAL = 4;
+    private static final int MAX_CARDS = 4;
 
     private ExecutorService executorService;
 
@@ -23,6 +23,23 @@ public class Referee {
         this.whistle = whistle;
     }
 
+    public void startGame(Game game) {
+        this.game = game;
+
+        initialiseExecutorService(game.getPlayers());
+
+        for(Player player : game.getPlayers()){
+            playerPositions.put(player.getId(),player.getCurrentPosition());
+            playerCards.put(player.getId(),new ArrayList<Card>());
+            executorService.execute(player);
+        }
+        whistle.countDown();
+        try {
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+        }
+    }
+
     public synchronized void update(Player player){
         playerPositions.put(player.getId(), player.getCurrentPosition());
         Iterator it = playerPositions.entrySet().iterator();
@@ -31,6 +48,7 @@ public class Referee {
             if(pair.getKey()!= player.getId()){
                if(player.getCurrentPosition().getDistance(pair.getValue()) <= 2){
                    issueYellowCard(player);
+                   removePlayerFromGameIfNeeded(player);
                }
             }
         }
@@ -38,19 +56,28 @@ public class Referee {
 
     private void issueYellowCard(Player player) {
         playerCards.get(player.getId()).add(Card.YELLOW);
-        if(playerMustBeRemoved(player)){
-            removePlayerFromGame(player);
+    }
+
+    private void removePlayerFromGameIfNeeded(Player player) {
+        if(playerCards.get(player.getId()).size() == FIRST_REMOVAL
+                || playerCards.get(player.getId()).size() == MAX_CARDS){
+            game.removePlayer(player);
+            playerPositions.remove(player.getId());
+            player.setPlaying(false);
         }
     }
 
-    private boolean playerMustBeRemoved(Player player) {
-        return playerCards.get(player.getId()).size() == FIRST_REMOVAL || playerCards.get(player.getId()).size() == SECOND_REMOVAL;
-    }
-
-    private void removePlayerFromGame(Player player) {
-        game.removePlayer(player);
-        playerPositions.remove(player.getId());
-        player.setPlaying(false);
+    public synchronized boolean allowsEntry(Player player) {
+        if(playerCards.get(player.getId()).size() != MAX_CARDS){
+            playerPositions.put(player.getId(), player.getCurrentPosition());
+            game.addPlayer(player);
+            return true;
+        }
+        else{
+            System.out.println(String.format("Player %s has left the game", player.getId()));
+            checkForGameTermination();
+            return false;
+        }
     }
 
     /**
@@ -63,7 +90,7 @@ public class Referee {
             Iterator it = playerCards.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<Integer,List<Card>> pair = (Map.Entry)it.next();
-                if(pair.getKey()!= lastPlayer.getId() && pair.getValue().size() !=4){
+                if(pair.getKey()!= lastPlayer.getId() && pair.getValue().size() != MAX_CARDS){
                     return; //Game must continue
                 }
             }
@@ -73,41 +100,16 @@ public class Referee {
         }
     }
 
-    public synchronized boolean allowsEntry(Player player) {
-        if(playerCards.get(player.getId()).size() != SECOND_REMOVAL){
-            playerPositions.put(player.getId(), player.getCurrentPosition());
-            game.addPlayer(player);
-            return true;
-        }
-        else{
-            System.out.println(String.format("Player %s has left the game", player.getId()));
-            checkForGameTermination();
-            return false;
-        }
-    }
 
-    public void startGame(Game game) {
-        this.game = game;
-        for(Player player : game.getPlayers()){
-            playerPositions.put(player.getId(),player.getCurrentPosition());
-            playerCards.put(player.getId(),new ArrayList<Card>());
-        }
-        executorService = Executors.newFixedThreadPool(game.getPlayers().size());
+
+    private void initialiseExecutorService(List<Player> players) {
+        executorService = Executors.newFixedThreadPool(players.size());
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 executorService.shutdown();
             }
         });
-
-        for(Player player : game.getPlayers()){
-            executorService.execute(player);
-        }
-        whistle.countDown();
-        try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-        }
     }
 
     protected Map<Integer, List<Card>> getPlayerCards() {
