@@ -52,7 +52,7 @@ public class RefereeTest {
     }
 
     @Test
-    public void testYellowCardIssuedToPlayerWhenOtherPlayerIsWithinTwoMetres(){
+    public void testYellowCardIssuedToPlayerWhenAnotherPlayerIsWithinTwoMetres(){
         setDefaultPlayerCards(0);
         setUpOtherPlayerWithCoOrdinatesWithinTwoMetre();
 
@@ -62,7 +62,7 @@ public class RefereeTest {
     }
 
     @Test
-    public void testYellowCardNotWhenOtherPlayersMoreThanTwoMetresAway(){
+    public void testYellowCardNotIssuedWhenOtherPlayersMoreThanTwoMetresAway(){
         setDefaultPlayerCards(0);
         setUpOtherPlayerWithCoOrdinatesMoreTwoMetre();
 
